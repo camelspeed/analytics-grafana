@@ -1,2 +1,2 @@
-# analytics-grafana
-Analytical experiments focused on storage, ingestion, and visualization
+# sample-log-monitoring
+Experiments on log collection, storage, alerting, and visualization
