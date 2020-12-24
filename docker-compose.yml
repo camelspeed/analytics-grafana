@@ -1,44 +1,25 @@
 version: "3.7"
 
 volumes:
-  apigw-vol:
-    name: jllis-pubsub-vol
+  sample-log-monitoring-vol:
+    name: sample-log-monitoring-vol
 
 networks:
-  pubsub:
-    name: jllis-pubsub-net
+  sample-log-monitoring:
+    name: sample-log-monitoring-net
 
 services:  
   ####################################
-  # RABBIT MQ
-  ####################################
-  pubsub-mq:
-    build: services/rabbitmq
-    image: pubsub/mq:1.0
-    container_name: pubsub-mq
-    ports:
-      - 8080:15672
-      - 5672:5672
-    networks:
-      - pubsub
-
-  ####################################
   # API
   ####################################
-  pubsub-api:
+  sample-log-monitoring-api:
     build: .
-    image: pubsub/api:1.0
-    container_name: pubsub-api
+    image: sample-log-monitoring/api:1.0
+    container_name: sample-log-monitoring-api
     ports:
       - 3000:3000
-    environment: 
-      PUBSUB_MQ_HOST: pubsub-mq
-      PUBSUB_DB_HOST: pubsub-db
-    depends_on:
-      - pubsub-db
-      - pubsub-mq
     networks:
-      - pubsub
+      - sample-log-monitoring
 
   ####################################
   # KONG API GATEWAY
@@ -74,62 +55,48 @@ services:
 
 
   ####################################
-  # MONGO DB
-  ####################################
-  pubsub-db:
-    build: services/mongodb
-    image:  pubsub/db:1.0
-    container_name: pubsub-db
-    ports:
-      - 27017:27017
-      - 8081:8081
-    environment:
-      MONGO_USER: root
-      MONGO_PASSWORD: example
-    networks:
-      - pubsub
-
-  ####################################
-  # LOGSTASH
-  ####################################
-  pubsub-logstash:
-    build: services/logstash
-    image:  pubsub/logstash:1.0
-    container_name: pubsub-logstash
-    depends_on:
-      - pubsub-mq
-      - pubsub-search
-    networks:
-      - pubsub
-
-  ####################################
   # ELASTIC
   ####################################
-  pubsub-search:
+  sample-log-monitoring-search:
     build: services/elastic
-    image:  pubsub/elastic:1.0
-    container_name: pubsub-search
+    image:  sample-log-monitoring/elastic:1.0
+    container_name: sample-log-monitoring-search
     ports:
       - 9200:9200
       - 9300:9300
     environment:
       discovery.type: single-node
     networks:
-      - pubsub
+      - sample-log-monitoring
 
   ####################################
   # KIBANA
   ####################################
-  pubsub-viz:
+  sample-log-monitoring-viz:
     build: services/kibana
-    image:  pubsub/kibana:1.0
-    container_name: pubsub-viz
+    image:  sample-log-monitoring/kibana:1.0
+    container_name: sample-log-monitoring-viz
     ports:
       - 5601:5601
     environment:
-      SERVER_NAME: kibana.pubsub.org
-      ELASTICSEARCH_HOSTS: http://pubsub-search:9200
+      SERVER_NAME: kibana.sample-log-monitoring.org
+      ELASTICSEARCH_HOSTS: http://sample-log-monitoring-search:9200
     depends_on:
-      - pubsub-search
+      - sample-log-monitoring-search
     networks:
-      - pubsub
+      - sample-log-monitoring
+
+  ####################################
+  # FLUENTD
+  ####################################
+  sample-log-monitoring-fluentd:
+    build: services/fluentd
+    image:  sample-log-monitoring/fluentd:1.0
+    container_name: sample-log-monitoring-fluentd
+    ports:
+      - 9880:9880
+      - 24224:24224
+    environment:
+      FLUENTD_CONF: fluentd.conf
+    networks:
+      - sample-log-monitoring
