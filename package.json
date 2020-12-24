@@ -1,0 +1,42 @@
+{
+  "name": "log-emitter-app",
+  "version": "0.0.0",
+  "private": true,
+  "main": "dist/app.js",
+  "scripts": {
+    "build": "rimraf dist && tsc",
+    "test:integration": "npm run test",
+    "test": "jest --coverage",
+    "start": "npm run build && nodemon -r ts-node/register dist/app.js",
+    "kibana:build": "docker build -t jllis/kibana:7.8.0 services/kibana",
+    "kibana:run": "docker run --name jllis-pubsub-kibana --link pubsub-search:elasticsearch --network=prototype-pubsub-app_pubsub -p 5601:5601 jllis/kibana:7.8.0",
+    "kibana:stop": "docker stop jllis-pubsub-kibana",
+    "kibana:start": "docker start jllis-pubsub-kibana",
+    "kibana:rm": "docker rm jllis-pubsub-kibana && docker rmi jllis/kibana:7.8.0",
+    "search:install": "docker build -t jllis/elastic:7.8.0 services/elastic",
+    "search:run": "docker run -p 9200:9200 -p 9300:9300 -e 'discovery.type=single-node' --name jllis-pubsub-search jllis/elastic:7.8.0",
+    "search:stop": "docker stop jllis-pubsub-search",
+    "search:start": "docker start jllis-pubsub-search",
+    "search:rm": "docker rm jllis-pubsub-search",
+    "clean": "rimraf dist coverage",
+    "reset": "rm -rf node_modules dist coverage"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.5",
+    "express": "~4.16.1",
+    "http-errors": "~1.6.3",
+    "morgan": "~1.9.1",
+    "rimraf": "^3.0.2",
+    "typescript": "^3.9.3",
+    "uuid": "^8.1.0",
+    "jsonwebtoken": "^8.5.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^25.2.3",
+    "jest": "^26.0.1",
+    "debug": "~2.6.9",
+    "nodemon": "^2.0.4",
+    "ts-jest": "^26.0.0",
+    "ts-node": "^8.10.2"
+  }
+}

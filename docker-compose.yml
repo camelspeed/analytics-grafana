@@ -1,0 +1,135 @@
+version: "3.7"
+
+volumes:
+  apigw-vol:
+    name: jllis-pubsub-vol
+
+networks:
+  pubsub:
+    name: jllis-pubsub-net
+
+services:  
+  ####################################
+  # RABBIT MQ
+  ####################################
+  pubsub-mq:
+    build: services/rabbitmq
+    image: pubsub/mq:1.0
+    container_name: pubsub-mq
+    ports:
+      - 8080:15672
+      - 5672:5672
+    networks:
+      - pubsub
+
+  ####################################
+  # API
+  ####################################
+  pubsub-api:
+    build: .
+    image: pubsub/api:1.0
+    container_name: pubsub-api
+    ports:
+      - 3000:3000
+    environment: 
+      PUBSUB_MQ_HOST: pubsub-mq
+      PUBSUB_DB_HOST: pubsub-db
+    depends_on:
+      - pubsub-db
+      - pubsub-mq
+    networks:
+      - pubsub
+
+  ####################################
+  # KONG API GATEWAY
+  ####################################
+  # pubsub-apigw:
+  #   build: services/apigw/kong
+  #   image: pubsub/apigw:1.0
+  #   container_name: pubsub-apigw
+  #   volumes:
+  #     - apigw-vol
+  #   environment:
+  #     KONG_DATABASE: 'off'
+  #     KONG_DECLARATIVE_CONFIG: '/usr/local/kong/declarative/kong.yml'
+  #     KONG_ADMIN_ACCESS_LOG: /dev/stdout
+  #     KONG_ADMIN_ERROR_LOG: /dev/stderr
+  #     KONG_ADMIN_LISTEN: '0.0.0.0:8001'      
+  #     KONG_PROXY_ACCESS_LOG: /dev/stdout
+  #     KONG_PROXY_ERROR_LOG: /dev/stderr
+  #   networks:
+  #     - pubsub
+  #   ports:
+  #     - "8000:8000/tcp"
+  #     - "127.0.0.1:8001:8001/tcp"
+  #   healthcheck:
+  #     test: ["CMD", "kong", "health"]
+  #     interval: 10s
+  #     timeout: 10s
+  #     retries: 10
+  #   restart: on-failure
+  #   deploy:
+  #     restart_policy:
+  #       condition: on-failure
+
+
+  ####################################
+  # MONGO DB
+  ####################################
+  pubsub-db:
+    build: services/mongodb
+    image:  pubsub/db:1.0
+    container_name: pubsub-db
+    ports:
+      - 27017:27017
+      - 8081:8081
+    environment:
+      MONGO_USER: root
+      MONGO_PASSWORD: example
+    networks:
+      - pubsub
+
+  ####################################
+  # LOGSTASH
+  ####################################
+  pubsub-logstash:
+    build: services/logstash
+    image:  pubsub/logstash:1.0
+    container_name: pubsub-logstash
+    depends_on:
+      - pubsub-mq
+      - pubsub-search
+    networks:
+      - pubsub
+
+  ####################################
+  # ELASTIC
+  ####################################
+  pubsub-search:
+    build: services/elastic
+    image:  pubsub/elastic:1.0
+    container_name: pubsub-search
+    ports:
+      - 9200:9200
+      - 9300:9300
+    environment:
+      discovery.type: single-node
+    networks:
+      - pubsub
+
+  ####################################
+  # KIBANA
+  ####################################
+  pubsub-viz:
+    build: services/kibana
+    image:  pubsub/kibana:1.0
+    container_name: pubsub-viz
+    ports:
+      - 5601:5601
+    environment:
+      SERVER_NAME: kibana.pubsub.org
+      ELASTICSEARCH_HOSTS: http://pubsub-search:9200
+    depends_on:
+      - pubsub-search
+    networks:
+      - pubsub
