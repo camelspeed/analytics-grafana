@@ -1,27 +1,21 @@
-import * as createError from 'http-errors';
 import * as express from 'express';
 import * as cookieParser from 'cookie-parser';
 import * as logger from 'morgan';
 import { indexRouter } from './routes/index';
-import { usersRouter } from './routes/users';
-import { errorsMiddleWare } from './middleware/errors';
+import { playersRouter } from './routes/players';
+import { apiLoggerMiddleWare } from './middleware/apiLogger';
 
 const port = 3000;
 const app = express();
 
 app.use(logger('dev'));
+app.use(apiLoggerMiddleWare);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-app.use(errorsMiddleWare);
 app.use('/', indexRouter);
-app.use('/users', usersRouter);
-
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  next(createError(404));
-});
+app.use('/players', playersRouter);
 
 // error handler
 app.use(function(err, req, res, next) {
